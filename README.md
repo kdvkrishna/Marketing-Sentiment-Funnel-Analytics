@@ -16,6 +16,13 @@ Starting from a legacy Microsoft SQL Server backup (.bak), the project reconstru
 
 ---
 
+## Project Snapshot
+- 1.2M+ View Events Analyzed
+- 840 Positive Reviews Processed
+- 19.57% CTR Evaluated
+- SQL Server → PostgreSQL ETL Pipeline
+- End-to-End Marketing Analytics Workflow
+
 ## Business Problem
 
 A legacy marketing database containing customer engagement, transaction, and review data was locked inside a proprietary SQL Server backup.
