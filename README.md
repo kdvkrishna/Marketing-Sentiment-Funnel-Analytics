@@ -1,151 +1,179 @@
-# Marketing-Sentiment-Funnel-Analytics
-Cross-platform ETL pipeline migrating legacy MS SQL Server data into PostgreSQL, featuring custom Python automated text NLP sentiment analysis (VADER) and an interactive Power BI conversion funnel dashboard.
+# Marketing Analytics: ETL Pipeline, Sentiment Analysis & Conversion Funnel Diagnostics
 
+## Project Overview
 
-# Cross-Platform ETL Pipeline, Product Sentiment Analysis, and Conversion Funnel Diagnostics
+This project demonstrates an end-to-end marketing analytics workflow combining data engineering, SQL analytics, natural language processing (NLP), and business intelligence reporting.
 
-## 📌 Project Overview
-This portfolio project demonstrates a comprehensive, end-to-end data analytics lifecycle engineered to resolve data silo fragmentation, evaluate customer satisfaction trends, and diagnose digital marketing conversion funnels. 
-
-The workflow transitions across platforms by building a custom Python ETL pipeline to migrate legacy Microsoft SQL Server backup data (`.bak`) into a production-ready PostgreSQL database. Automated Natural Language Processing (NLP) text analytics were implemented via Python to calculate consumer sentiment, which was subsequently mapped against human review behaviors. Finally, an interactive multi-stage funnel architecture was constructed in Power BI to isolate user drop-off points.
+Starting from a legacy Microsoft SQL Server backup (.bak), the project reconstructs the database in PostgreSQL, performs data quality auditing, analyzes customer sentiment using VADER NLP, and builds an interactive Power BI dashboard to identify conversion bottlenecks, engagement trends, and customer satisfaction opportunities.
 
 ---
 
-## 🛠️ Tech Stack & Tools
-* **Database Infrastructure:** PostgreSQL, Microsoft SQL Server (SSMS)
-* **Programming Languages:** Python (Pandas, SQLAlchemy, NLTK/VADER), SQL (PostgreSQL Dialect)
-* **Business Intelligence & Visualization:** Power BI Desktop (Power Query, DAX modeling)
+## Business Problem
+
+A legacy marketing database containing customer engagement, transaction, and review data was locked inside a proprietary SQL Server backup.
+
+The business faced three key challenges:
+
+* Declining conversion rates across products
+* Falling customer engagement throughout 2025
+* Limited visibility into customer sentiment and review behavior
+
+The objective was to create a unified analytics solution capable of identifying operational bottlenecks and actionable optimization opportunities.
 
 ---
 
-## 🏗️ System Architecture & ETL Pipeline
-+-------------------+      Restoration       +----------------------------+
-|  Legacy Framework | ---------------------> | SQL Server Express (SSMS)  |
-|   (.bak File)     |                        |  (Local Server Instance)   |
-+-------------------+                        +----------------------------+
-|
-| Custom Python ETL Bridge
-v
-+-------------------+       Relational       +----------------------------+
-| Target Production | <--------------------- | Pipeline Script            |
-| (PostgreSQL DB)   |         Load           | (Pandas & SQLAlchemy)      |
-+-------------------+                        +----------------------------+
+## Project Architecture
 
+SQL Server (.bak)
+↓
+Restore Database in SSMS
+↓
+Python ETL Pipeline
+↓
+PostgreSQL Database
+↓
+SQL Cleaning & Auditing
+↓
+VADER Sentiment Analysis
+↓
+Power BI Dashboard
+↓
+Business Insights & Recommendations
 
-### 1. Database Migration Script
-Because legacy database backups use a proprietary binary file structure, the asset was first inflated locally in SSMS. A Python extraction script was written using `SQLAlchemy` to query the source, automatically normalize metadata configurations to lowercase to eliminate PostgreSQL's case-sensitivity query barriers, and load the clean arrays into the production destination database.
+---
 
-```python
-# Extract snippet from sentiment_analysis.py
-import pandas as pd
-from sqlalchemy import create_engine
+## Tech Stack
 
-def fetch_and_migrate():
-    # Source Connection (MSSQL with Windows Auth)
-    mssql_url = "mssql+pyodbc://localhost\\SQLEXPRESS/PortfolioProject_MarketingAnalytics?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes"
-    ms_engine = create_engine(mssql_url)
-    
-    # Target Connection (PostgreSQL Production)
-    postgres_url = "postgresql://postgres:your_password@localhost:5432/funnel_analytics"
-    pg_engine = create_engine(postgres_url)
-    
-    tables = ['fact_customer_reviews', 'engagement_data', 'customer_journey']
-    for table in tables:
-        df = pd.read_sql(f"SELECT * FROM dbo.{table}", ms_engine)
-        df.columns = [c.lower() for c in df.columns] # Case normalization
-        df.to_sql(table, pg_engine, if_exists='replace', index=False)
+### Data Engineering
 
-fetch_and_migrate()
+* Microsoft SQL Server
+* PostgreSQL
+* Python
+* Pandas
+* SQLAlchemy
 
-🧹 Data Auditing, Cleaning & Transformation (SQL)
-Before connecting to the visualization layer, the raw event tables were audited inside PostgreSQL to ensure mathematical integrity and high data standards.
+### Data Analysis
 
-1. Redundant Journey Event Isolation
-To guarantee that final conversion rate metrics were not artificially inflated by application lag or web errors (e.g., duplicate clicks on form submissions), a database audit was written using a Common Table Expression (CTE) and a window function to isolate duplicate logs:
-WITH DuplicateRecords AS (
-    SELECT 
-        journeyid, customerid, productid, visitdate, stage, action, duration,
-        ROW_NUMBER() OVER(
-            PARTITION BY customerid, productid, visitdate, stage, action
-            ORDER BY journeyid
-        ) AS row_num
-    FROM customer_journey
-)
-SELECT *
-FROM DuplicateRecords
-WHERE row_num > 1
-ORDER BY journeyid;
+* SQL
+* Common Table Expressions (CTEs)
+* Window Functions
 
-2. Schema Cleaning & Datetime Optimization
-A production database view was constructed to fix highly inconsistent categorical text strings in marketing channels (e.g., standardizing variations of socialmedia or SOCIALMEDIA to a clean 'Social Media' label). Additionally, date values were explicitly cast to native SQL DATE objects rather than un-parsable text formats (TO_CHAR) to prevent data corruption errors during Power BI ingestion:
-CREATE OR REPLACE VIEW cleaned_engagement_analytics AS
-SELECT 
-    engagementid, contentid, campaignid, productid,
-    CASE
-        WHEN LOWER(contenttype) IN ('socialmedia', 'social media') THEN 'Social Media'
-        WHEN LOWER(contenttype) IN ('blog') THEN 'Blog'
-        WHEN LOWER(contenttype) IN ('newsletter') THEN 'Newsletter'
-        WHEN LOWER(contenttype) IN ('video') THEN 'Video'
-        ELSE 'Other'
-    END AS content_type,
-    CAST(split_part(viewsclickscombined, '-', 1) AS INT) AS views,
-    CAST(split_part(viewsclickscombined, '-', 2) AS INT) AS clicks,
-    likes,
-    engagementdate::DATE AS engagement_date
-FROM engagement_data;
+### NLP
 
-🤖 Algorithmic Sentiment Analysis (Python NLP)
-The system passes raw text reviews into an automated text-processing pipeline using the VADER dictionary framework. To provide deeper analytical insight for management, a hybrid classification model was engineered. It evaluates the AI's textual score against empirical human behavior (the 1-5 star ratings) to actively flag instances of customer sarcasm or product misunderstandings.
-def calculate_sentiment(review):
-    if not review: return 0.0
-    return sia.polarity_scores(review)['compound']
+* NLTK
+* VADER Sentiment Analysis
 
-def categorize_sentiment(score, rating):
-    if score > 0.05:
-        if rating >= 4: return 'Positive'
-        elif rating == 3: return 'Mixed Positive'
-        else: return 'Mixed Negative'  # Sarcasm Flag: Text is positive, rating is low
-    elif score < -0.05:
-        if rating <= 2: return 'Negative'
-        elif rating == 3: return 'Mixed Negative'
-        else: return 'Mixed Positive'  # Nuanced Flag: Text is negative, rating is high
-    else:
-        if rating >= 4: return 'Positive'
-        elif rating <= 2: return 'Negative'
-        else: return 'Neutral'
+### Business Intelligence
 
-The output groups continuous compound scores into four simple performance categories (Strongly Positive, Mildly Positive, Mildly Negative, Strongly Negative), optimizing it for front-end visual reporting.
+* Power BI
+* DAX
+* Power Query
 
-📊 Business Intelligence & Dashboard Modeling (Power BI)
-1. Robust Conversion Modeling via DAX
-To eliminate front-end engine crashes resulting from divide-by-zero occurrences when evaluating newly launched digital assets with no baseline view actions, a robust conditional calculation model was structured in DAX:
-Conversion Rate = 
-VAR TotalVisitors = CALCULATE(COUNT(customer_journey[journeyid]), customer_journey[action] = "View")
-VAR TotalPurchase = CALCULATE(COUNT(customer_journey[journeyid]), customer_journey[action] = "Purchase")
+---
 
-RETURN
-IF(
-    TotalVisitors = 0,
-    0,
-    DIVIDE(TotalPurchase, TotalVisitors)
-)
+## Key Tasks Performed
 
-2. Core Dashboard Components
-Customer Review Scatter View: Maps continuous ratings against customer review frequencies, isolating high-volume negative clusters. Built by formatting customer identifiers as pure categorical text objects and disabling automatic summation blocks.
+### Database Migration & ETL
 
-Product Rating Distribution Matrix: Built with a Stacked Bar Chart format to show the breakdown of 1-to-5 star ratings for each of the top ten digital products, making the distribution data highly scannable in a single visual.
+* Restored a proprietary SQL Server backup (.bak) using SSMS.
+* Developed a Python ETL pipeline to migrate relational data into PostgreSQL.
+* Resolved schema compatibility issues through automated column normalization.
 
-💡 Key Insights & Tactical Business Value
+### Data Cleaning & Quality Assurance
 
-Conversion Funnel Friction: Cross-referencing funnel velocity charts with the product rating matrix revealed that a major user drop-off occurred immediately after the "Add to Cart" phase for specific product groups. This drop-off was driven by an influx of 1-star reviews on those items, signaling the need for updated product descriptions or clearer pricing.
+* Identified duplicate customer journey events using SQL window functions.
+* Standardized inconsistent marketing channel naming conventions.
+* Converted string-based date fields into native SQL DATE formats.
+* Created production-ready analytical views for reporting.
 
-Sarcasm Resolution Strategy: The hybrid NLP validation framework successfully caught hidden customer anomalies categorized as Mixed Negative. These records showed positive text scores but carried 1-star ratings. Manual review confirmed sarcasm (e.g., "Great, item arrived cracked"), proving that checking both text sentiment and numeric ratings together is vital for accurate brand tracking.
+### Sentiment Analysis
 
-Marketing Budget Optimization: Analyzing media engagement data showed that while Video content generated less raw impression surface volume than Social Media campaigns, its conversion click-through metric was $2.4\times$ higher. The strategic recommendation is to reallocate ad spend away from low-intent social media banners and toward high-conversion video formats.
+* Processed customer review text using VADER sentiment scoring.
+* Implemented a hybrid sentiment validation approach by comparing sentiment scores with star ratings.
+* Classified reviews into Positive, Mixed Positive, Neutral, Mixed Negative, and Negative categories.
 
-📂 Repository Contents
-data_cleaning_and_views.sql: Clean database logic, staging adjustments, and primary relational views.
+### Conversion Funnel Analysis
 
-sentiment_analysis.py: Automated Python NLP processing scripts and custom hybrid categorization logic.
+* Evaluated customer progression from Views → Clicks → Transactions.
+* Measured monthly conversion performance across product categories.
+* Identified seasonal conversion patterns and underperforming products.
 
-project_presentation.pdf: Executive slide deck summarizing technical challenges and financial insights.
+---
+
+## Key Findings
+
+### Conversion Performance
+
+* January recorded the highest conversion rate at 17.3%.
+* October recorded the lowest conversion rate at 6.1%.
+* Q4 conversion rate closed at 7.14%.
+* Swim Goggles and Running Shoes consistently converted below 7%.
+
+### Customer Engagement
+
+* Product views declined from 1.2M+ to approximately 700K during 2025.
+* Overall click-through rate reached 19.57%.
+* CTR declined from 9.13% in January to 2.75% in December.
+* Soccer Ball and Ice Skates generated unusually strong engagement relative to their price category.
+
+### Customer Sentiment
+
+* Positive sentiment reviews outnumbered negative reviews by nearly 4:1.
+* 840 positive reviews versus 226 negative reviews.
+* More than 21% of reviews fell into mixed or neutral sentiment categories.
+* Average customer rating remained at 3.69, below the target benchmark of 4.0.
+
+---
+
+## Dashboard Highlights
+
+The Power BI dashboard includes:
+
+* Conversion Funnel Diagnostics
+* Monthly Conversion Trends
+* Product-Level Performance Analysis
+* Customer Sentiment Distribution
+* Review Rating Analysis
+* Social Media Engagement Metrics
+* KPI Monitoring
+
+---
+
+## Strategic Recommendations
+
+### Increase Conversion Rates
+
+* Prioritize high-performing products such as Ski Boots, Hockey Sticks, and Baseball Gloves during peak conversion periods.
+* Implement targeted campaigns for underperforming products.
+
+### Improve Engagement
+
+* Replicate content strategies used by top-engagement products.
+* Optimize call-to-action placement during historically weak engagement periods.
+
+### Improve Customer Satisfaction
+
+* Focus improvement efforts on mixed and negative review segments.
+* Establish customer feedback loops to increase average ratings beyond 4.0.
+
+---
+
+## Repository Structure
+
+```text
+data/
+sql/
+python/
+powerbi/
+presentation/
+dashboard_screenshots/
+insights/
+```
+
+---
+
+## Author
+
+Krishna Devsishu
+
+Data Analytics | SQL | Python | Power BI | NLP
