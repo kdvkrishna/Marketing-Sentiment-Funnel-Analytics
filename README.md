@@ -1,5 +1,13 @@
 # Marketing Analytics: ETL Pipeline, Sentiment Analysis & Conversion Funnel Diagnostics
 
+## Tech Stack
+
+![SQL](https://img.shields.io/badge/SQL-Database-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1)
+![Python](https://img.shields.io/badge/Python-3776AB)
+![PowerBI](https://img.shields.io/badge/Power_BI-F2C811)
+![VADER](https://img.shields.io/badge/VADER-NLP-green)
+
 ## Project Overview
 
 This project demonstrates an end-to-end marketing analytics workflow combining data engineering, SQL analytics, natural language processing (NLP), and business intelligence reporting.
@@ -15,7 +23,7 @@ A legacy marketing database containing customer engagement, transaction, and rev
 The business faced three key challenges:
 
 * Declining conversion rates across products
-* Falling customer engagement throughout 2025
+* Falling customer engagement throughout
 * Limited visibility into customer sentiment and review behavior
 
 The objective was to create a unified analytics solution capable of identifying operational bottlenecks and actionable optimization opportunities.
